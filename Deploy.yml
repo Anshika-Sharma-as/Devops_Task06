@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: html-pvc
+  labels:
+    env: test
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: html-deploy-app
+  labels:
+    app: html-deploy-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: html-deploy-app
+  template:
+    metadata:
+      name: html-deploy-app
+      labels:
+        app: html-deploy-app
+    spec:
+      volumes:
+      - name: html-log
+        persistentVolumeClaim:
+          claimName: html-pvc
+      containers:
+      - name: html-con
+        image: httpd
+        volumeMounts:
+        - mountPath: "/var/log/httpd"
+          name: html-log
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: php-pvc
+  labels:
+    env: test
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-deploy-app
+  labels:
+    app: php-deploy-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: php-deploy-app
+  template:
+    metadata:
+      name: php-deploy-app
+      labels:
+        app: php-deploy-app
+    spec:
+      volumes:
+      - name: php-log
+        persistentVolumeClaim:
+          claimName: php-pvc
+      containers:
+      - name: php-con
+        image: php
+        volumeMounts:
+        - mountPath: "/var/log/httpd"
+          name: php-log
+
+     

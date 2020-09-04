@@ -1,0 +1,78 @@
+job("Job-1"){
+  description("Job-1")
+  scm{
+    github('Anshika-Sharma-as/Devops_Task06', 'master')
+  }
+  steps{
+    shell('sudo cp -rvf * /root/Task06')
+  }
+  triggers{
+     githubPushTrigger()
+  }
+}
+
+job("Job-2"){
+  description("Job-2")
+  steps{
+    shell('''
+       if sudo ls /root/Task06 | grep php
+       then 
+         if sudo kubectl get pods | grep deploy-php
+         then 
+           echo "Deployed PHP webserver"
+           sudo kubectl cp /root/Task06/*.php $(sudo kubectl get pods -o-jsonpath-'{.items[0].metadata.name}'):/var/www/html
+         else 
+           sudo kubectl -k /root/Task06/deploy/
+           sudo kubectl cp /root/Task06/*.php $(sudo kubectl get pods -o-jsonpath-'{.items[0].metadata.name}'):/var/www/html
+       
+       elif sudo ls /root/Task06/ | grep html
+       then 
+         if sudo kubectl get pods | grep deploy-html
+         then 
+           echo "Deployed HTML webserver"
+           sudo kubectl cp /root/Task06/*.html $(sudo kubectl get pods -o-jsonpath-'{.items[0].metadata.name}'):/var/www/html
+         else 
+           sudo kubectl -k /root/Task06/deploy/
+           sudo kubectl cp /root/Task06/*.html $(sudo kubectl get pods -o-jsonpath-'{.items[0].metadata.name}'):/var/www/html
+       else 
+         echo "No WebPage !!!!" 
+       
+       fi
+   ''')
+  }
+  triggers{
+     upstream('Job-1','SUCCESS')
+  }
+}
+
+job("Job-3")
+{
+  steps{
+     shell('''
+        status=$(curl -o /dev/null -s -w "%{http_code}" http://192.168.56.102:31000/)
+        if [[ $status == 200 ]]
+        then 
+          echo "WebServer is working good !!"
+          exit 1
+        else 
+           echo "There is some problem in WebServer"
+           echo 0
+        fi 
+     ''')
+   }
+   triggers {
+       upstream('Job-2', 'SUCCESS')
+   }
+}
+
+job("Job-4"){
+  steps{
+    shell('''
+       echo "Since webserver is down !! i have sent a mail "
+       sudo python3 /root/Task06/mail.py 
+    ''')
+  }
+  triggers {
+     upstream('Job-3', 'SUCCESS')
+  }
+}
