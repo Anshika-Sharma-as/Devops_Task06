@@ -82,4 +82,20 @@ spec:
         - mountPath: "/var/log/httpd"
           name: php-log
 
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: expose
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 2301
+  selector:
+    app: html-deploy-app
+    app: php-deploy-app
+  type: NodePort
+
      
